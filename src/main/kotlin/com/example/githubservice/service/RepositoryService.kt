@@ -10,9 +10,7 @@ import org.json.JSONArray
 import org.springframework.stereotype.Service
 
 @Service
-class RepositoryService {
-
-    private val httpClient = OkHttpClient()
+class RepositoryService(private val httpClient: OkHttpClient) {
 
     fun getRepositories(username: String): List<GitHubRepository> {
 
@@ -44,9 +42,7 @@ class RepositoryService {
     private fun getRepositoriesByUsername(username: String): JSONArray {
         val url = "https://api.github.com/users/$username/repos"
 
-        val request: Request = Request.Builder()
-                .url(url)
-                .build()
+        val request: Request = Request.Builder().url(url).build()
 
         val response: Response = httpClient.newCall(request).execute()
         val responseBody: String? = response.body?.string()
@@ -59,9 +55,7 @@ class RepositoryService {
     }
 
     private fun getBranchesByRepoUrl(branchesUrl: String): List<Branch> {
-        val branchesRequest = Request.Builder()
-                .url(branchesUrl)
-                .build()
+        val branchesRequest = Request.Builder().url(branchesUrl).build()
 
         val branchesResponse: Response = httpClient.newCall(branchesRequest).execute()
         val branchesResponseBody: String? = branchesResponse.body?.string()
