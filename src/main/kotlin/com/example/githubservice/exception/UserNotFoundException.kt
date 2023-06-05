@@ -1,4 +1,4 @@
-package com.example.githubservice.service
+package com.example.githubservice.exception
 
 class UserNotFoundException(message: String) : RuntimeException(message) {
 }

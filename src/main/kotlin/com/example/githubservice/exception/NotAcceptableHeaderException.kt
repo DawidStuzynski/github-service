@@ -1,4 +1,4 @@
-package com.example.githubservice.controller
+package com.example.githubservice.exception
 
 class NotAcceptableHeaderException(message: String) : RuntimeException(message) {
 }
