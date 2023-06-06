@@ -2,7 +2,7 @@ package com.example.githubservice.controller
 
 import com.example.githubservice.dto.RepositoryWithBranchesDto
 import com.example.githubservice.exception.NotAcceptableHeaderException
-import com.example.githubservice.service.RepositoryService
+import com.example.githubservice.services.RepositoryService
 import org.springframework.web.bind.annotation.*
 
 @RestController

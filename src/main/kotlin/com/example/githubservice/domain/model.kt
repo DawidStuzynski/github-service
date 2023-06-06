@@ -1,4 +1,4 @@
-package com.example.githubservice.ports
+package com.example.githubservice.domain
 
 data class Repository(val name: String, val user: String, val isForked: Boolean)
 

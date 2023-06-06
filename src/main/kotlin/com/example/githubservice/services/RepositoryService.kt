@@ -1,8 +1,7 @@
-package com.example.githubservice.service
+package com.example.githubservice.services
 
 import com.example.githubservice.dto.BranchDto
 import com.example.githubservice.dto.RepositoryWithBranchesDto
-import com.example.githubservice.ports.RepositoryPort
 import org.springframework.stereotype.Service
 
 @Service

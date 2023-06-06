@@ -1,18 +1,20 @@
-package com.example.githubservice.adapter
+package com.example.githubservice.services
 
-import com.example.githubservice.configuration.RepositoryConfiguration
+import com.example.githubservice.domain.Branch
+import com.example.githubservice.domain.BranchResponse
+import com.example.githubservice.domain.Repository
+import com.example.githubservice.domain.RepositoryResponse
 import com.example.githubservice.exception.InternalServerErrorException
 import com.example.githubservice.exception.RepositoryNotFoundException
 import com.example.githubservice.exception.UserNotFoundException
-import com.example.githubservice.ports.*
-import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.http.client.utils.URIBuilder
 import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
 
 @Component
-class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectMapper, val configuration: RepositoryConfiguration) : RepositoryPort {
+class RepositoryAdapterAPIv3(val webClientBuilder: WebClient.Builder) : RepositoryPort {
 
     companion object {
         const val INTERNAL_ERROR_MESSAGE = "Internal server error occurred"
@@ -21,16 +23,22 @@ class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectM
 
     override fun getRepositoriesByName(username: String): List<Repository> {
 
-        val url = "https://api.github.com/users/$username/repos"
 
-        val response = webClient.get()
-                .uri(url)
+
+        val uri = URIBuilder("https://api.github.com")
+                .setPath("/users/$username/repos")
+                .build()
+
+        val response = webClientBuilder.build()
+                .get()
+                .uri(uri)
                 .retrieve()
-                .toEntity(String::class.java)
+                .toEntityList(RepositoryResponse::class.java)
+                .log()
+                .onErrorMap { error -> RepositoryNotFoundException(error.message.toString()) }
                 .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
 
         val responseBody = response.body
-
         val statusCode = response.statusCode
 
         if (!statusCode.is2xxSuccessful) {
@@ -45,36 +53,38 @@ class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectM
                 }
             }
         }
-        val responseList: List<RepositoryResponse>
-        try {
-            responseList = objectMapper.readValue(responseBody,
-                    objectMapper.typeFactory.constructCollectionType(List::class.java, RepositoryResponse::class.java))
-        } catch (ex: Exception) {
-            throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
-        }
 
 
-        val repositories: List<Repository> = responseList.map {
+        val repositories: List<Repository> = responseBody?.map {
             Repository(
                     name = it.name,
                     user = it.owner.login,
                     isForked = it.fork
             )
-        }
+        } ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
         return repositories
     }
 
     override fun getBranchesByUsernameAndRepository(username: String, repository: String): List<Branch> {
-        val url = "https://api.github.com/repos/$username/$repository/branches"
 
-        val response = webClient.get()
-                .uri(url)
+        val uri = URIBuilder("https://api.github.com")
+                .setPath("/repos/$username/$repository/branches")
+                .build()
+
+
+        val response = webClientBuilder.build()
+                .get()
+                .uri(uri)
                 .retrieve()
-                .toEntity(String::class.java)
+                .toEntityList(BranchResponse::class.java)
+                .log()
+                .onErrorMap { error -> RepositoryNotFoundException(error.message.toString()) }
                 .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
+
 
         val responseBody = response.body
         val statusCode = response.statusCode
+
 
         if (!statusCode.is2xxSuccessful) {
             when (statusCode) {
@@ -89,20 +99,12 @@ class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectM
             }
         }
 
-        val responseList: List<BranchResponse>
-        try {
-            responseList = objectMapper.readValue(responseBody,
-                    objectMapper.typeFactory.constructCollectionType(List::class.java, BranchResponse::class.java))
-        } catch (ex: Exception) {
-            throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
-        }
-
-        val branches: List<Branch> = responseList.map {
+        val branches: List<Branch> = responseBody?.map {
             Branch(
                     name = it.name,
                     commitSha = it.commit.sha
             )
-        }
+        } ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
         return branches
     }
 }
