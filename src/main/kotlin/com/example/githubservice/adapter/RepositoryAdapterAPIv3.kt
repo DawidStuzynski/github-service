@@ -29,7 +29,8 @@ class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectM
                 .toEntity(String::class.java)
                 .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
 
-        val responseBody = response.toString()
+        val responseBody = response.body
+
         val statusCode = response.statusCode
 
         if (!statusCode.is2xxSuccessful) {
@@ -72,8 +73,9 @@ class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectM
                 .toEntity(String::class.java)
                 .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
 
-        val responseBody = response.toString()
+        val responseBody = response.body
         val statusCode = response.statusCode
+
         if (!statusCode.is2xxSuccessful) {
             when (statusCode) {
                 HttpStatusCode.valueOf(404) -> {
