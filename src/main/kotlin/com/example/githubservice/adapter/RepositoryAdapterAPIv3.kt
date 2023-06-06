@@ -6,14 +6,13 @@ import com.example.githubservice.exception.RepositoryNotFoundException
 import com.example.githubservice.exception.UserNotFoundException
 import com.example.githubservice.ports.*
 import com.fasterxml.jackson.databind.ObjectMapper
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.client.WebClient
 
 
 @Component
-class RepositoryAdapterAPIv3(val httpClient: OkHttpClient, val objectMapper: ObjectMapper, val configuration: RepositoryConfiguration) : RepositoryPort {
+class RepositoryAdapterAPIv3(val webClient: WebClient, val objectMapper: ObjectMapper, val configuration: RepositoryConfiguration) : RepositoryPort {
 
     companion object {
         const val INTERNAL_ERROR_MESSAGE = "Internal server error occurred"
@@ -24,16 +23,18 @@ class RepositoryAdapterAPIv3(val httpClient: OkHttpClient, val objectMapper: Obj
 
         val url = "https://api.github.com/users/$username/repos"
 
-        val request: Request = Request.Builder().url(url).build()
+        val response = webClient.get()
+                .uri(url)
+                .retrieve()
+                .toEntity(String::class.java)
+                .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
 
-        val response: Response = httpClient.newCall(request).execute()
-        val responseBody: String? = response.body?.string()
+        val responseBody = response.toString()
+        val statusCode = response.statusCode
 
-
-
-        if (!response.isSuccessful) {
-            when (response.code) {
-                404 -> {
+        if (!statusCode.is2xxSuccessful) {
+            when (statusCode) {
+                HttpStatusCode.valueOf(404) -> {
                     val errorMessage = "User with name $username not found"
                     throw UserNotFoundException(errorMessage)
                 }
@@ -65,15 +66,19 @@ class RepositoryAdapterAPIv3(val httpClient: OkHttpClient, val objectMapper: Obj
     override fun getBranchesByUsernameAndRepository(username: String, repository: String): List<Branch> {
         val url = "https://api.github.com/repos/$username/$repository/branches"
 
-        val request: Request = Request.Builder().url(url).build()
+        val response = webClient.get()
+                .uri(url)
+                .retrieve()
+                .toEntity(String::class.java)
+                .block() ?: throw InternalServerErrorException(INTERNAL_ERROR_MESSAGE)
 
-        val response: Response = httpClient.newCall(request).execute()
-        val responseBody: String? = response.body?.string()
-
-        if (!response.isSuccessful) {
-            when (response.code) {
-                404 -> {
-                    throw RepositoryNotFoundException(INTERNAL_ERROR_MESSAGE)
+        val responseBody = response.toString()
+        val statusCode = response.statusCode
+        if (!statusCode.is2xxSuccessful) {
+            when (statusCode) {
+                HttpStatusCode.valueOf(404) -> {
+                    val errorMessage = "Repository with name $repository not found"
+                    throw RepositoryNotFoundException(errorMessage)
                 }
 
                 else -> {
