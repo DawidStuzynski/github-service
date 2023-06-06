@@ -2,8 +2,6 @@ package com.example.githubservice.domain
 
 data class Repository(val name: String, val user: String, val isForked: Boolean)
 
-data class Branch(val name: String, val commitSha: String)
-
 data class RepositoryResponse(
         val name: String,
         val owner: Owner,

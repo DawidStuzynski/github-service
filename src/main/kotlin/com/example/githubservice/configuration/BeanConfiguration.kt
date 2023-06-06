@@ -6,7 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 
 
 @Configuration
-class BeanConfiguration(val configuration: RepositoryConfiguration) {
+class BeanConfiguration() {
 
     @Bean
     fun webClient(): WebClient.Builder {
